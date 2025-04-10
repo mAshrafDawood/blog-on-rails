@@ -7,4 +7,29 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "posts#index"
+
+
+  namespace :api do
+    namespace :v1 do
+
+      # Register
+      post '/register', to: 'users#create'
+
+      # Authentication
+      post '/login', to: 'authentication#login'
+      post '/logout', to: 'authentication#logout'
+
+      # Password reset
+      put '/change_password', to: 'passwords#update'
+
+      # Resources for posts
+      resources :posts, only: [:index, :show, :create, :update, :destroy] do
+        # Nested resources for comments and likes
+        resources :comments, only: [:index, :create, :update, :destroy]
+        resource :like, only: [:create, :destroy]
+      end
+
+    end
+  end
+
 end
