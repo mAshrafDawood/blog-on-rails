@@ -5,6 +5,8 @@ class Post < ApplicationRecord
     has_many :likers, through: :likes, source: :user
     has_many :comments, dependent: :destroy
 
+    after_create :schedule_post_deletion
+
     accepts_nested_attributes_for  :tags, allow_destroy: true
 
     validates :title, presence: true
@@ -22,4 +24,8 @@ class Post < ApplicationRecord
             errors.add(:tags, "must have at least one tag")
         end
     end    
+
+    def schedule_post_deletion
+        PostDeletionJob.set(wait: 24.hours).perform_later(id)
+    end
 end

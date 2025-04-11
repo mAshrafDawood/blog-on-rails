@@ -55,6 +55,24 @@ FROM base
 COPY --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --from=build /rails /rails
 
+ARG BLOG_ON_RAILS_PROD_DATABASE
+ARG BLOG_ON_RAILS_PROD_DATABASE_USERNAME
+ARG BLOG_ON_RAILS_PROD_DATABASE_HOST
+ARG BLOG_ON_RAILS_PROD_DATABASE_PORT
+ARG BLOG_ON_RAILS_REDIS_HOST
+ARG BLOG_ON_RAILS_REDIS_PORT
+
+
+ENV BLOG_ON_RAILS_PROD_DATABASE=${BLOG_ON_RAILS_PROD_DATABASE} \
+    BLOG_ON_RAILS_PROD_DATABASE_USERNAME=${BLOG_ON_RAILS_PROD_DATABASE_USERNAME} \
+    BLOG_ON_RAILS_PROD_DATABASE_HOST=${BLOG_ON_RAILS_PROD_DATABASE_HOST} \
+    BLOG_ON_RAILS_PROD_DATABASE_PORT=${BLOG_ON_RAILS_PROD_DATABASE_PORT} \
+    BLOG_ON_RAILS_REDIS_HOST=${BLOG_ON_RAILS_REDIS_HOST} \
+    BLOG_ON_RAILS_REDIS_PORT=${BLOG_ON_RAILS_REDIS_PORT} 
+
+COPY wait-for-db.sh /usr/local/bin/wait-for-db.sh
+RUN chmod +x /usr/local/bin/wait-for-db.sh
+
 # Run and own only the runtime files as a non-root user for security
 RUN groupadd --system --gid 1000 rails && \
     useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
@@ -66,4 +84,6 @@ ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
 # Start server via Thruster by default, this can be overwritten at runtime
 EXPOSE 80
-CMD ["./bin/thrust", "./bin/rails", "server"]
+CMD ["bash", "-c", "./bin/thrust ./bin/rails server && bundle exec sidekiq"]
+
+

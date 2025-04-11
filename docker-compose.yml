@@ -1,0 +1,87 @@
+services:
+  app:
+    env_file: ".env"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BLOG_ON_RAILS_PROD_DATABASE: ${BLOG_ON_RAILS_PROD_DATABASE}
+        BLOG_ON_RAILS_PROD_DATABASE_USERNAME: ${BLOG_ON_RAILS_PROD_DATABASE_USERNAME}
+        BLOG_ON_RAILS_PROD_DATABASE_HOST: ${BLOG_ON_RAILS_PROD_DATABASE_HOST}
+        BLOG_ON_RAILS_PROD_DATABASE_PORT: ${BLOG_ON_RAILS_PROD_DATABASE_PORT}
+        BLOG_ON_RAILS_REDIS_HOST: ${BLOG_ON_RAILS_REDIS_HOST}
+        BLOG_ON_RAILS_REDIS_PORT: ${BLOG_ON_RAILS_REDIS_PORT}
+    environment:
+      BLOG_ON_RAILS_PROD_DATABASE: ${BLOG_ON_RAILS_PROD_DATABASE}
+      BLOG_ON_RAILS_PROD_DATABASE_USERNAME: ${BLOG_ON_RAILS_PROD_DATABASE_USERNAME}
+      BLOG_ON_RAILS_PROD_DATABASE_PASSWORD: ${BLOG_ON_RAILS_PROD_DATABASE_PASSWORD}
+      BLOG_ON_RAILS_PROD_DATABASE_HOST: ${BLOG_ON_RAILS_PROD_DATABASE_HOST}
+      BLOG_ON_RAILS_PROD_DATABASE_PORT: ${BLOG_ON_RAILS_PROD_DATABASE_PORT}
+      BLOG_ON_RAILS_JWT_SECRET_KEY: ${BLOG_ON_RAILS_JWT_SECRET_KEY}
+      BLOG_ON_RAILS_REDIS_HOST: ${BLOG_ON_RAILS_REDIS_HOST}
+      BLOG_ON_RAILS_REDIS_PORT: ${BLOG_ON_RAILS_REDIS_PORT}
+      BLOG_ON_RAILS_REDIS_PASSWORD: ${BLOG_ON_RAILS_REDIS_PASSWORD}
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+    ports:
+      - "3000:80"
+    depends_on:
+      - postgres
+      - redis
+      - sidekiq
+    command: ["bash", "-c", "/usr/local/bin/wait-for-db.sh && ./bin/thrust ./bin/rails server"]
+
+  sidekiq:
+    env_file: ".env"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BLOG_ON_RAILS_PROD_DATABASE: ${BLOG_ON_RAILS_PROD_DATABASE}
+        BLOG_ON_RAILS_PROD_DATABASE_USERNAME: ${BLOG_ON_RAILS_PROD_DATABASE_USERNAME}
+        BLOG_ON_RAILS_PROD_DATABASE_HOST: ${BLOG_ON_RAILS_PROD_DATABASE_HOST}
+        BLOG_ON_RAILS_PROD_DATABASE_PORT: ${BLOG_ON_RAILS_PROD_DATABASE_PORT}
+        BLOG_ON_RAILS_REDIS_HOST: ${BLOG_ON_RAILS_REDIS_HOST}
+        BLOG_ON_RAILS_REDIS_PORT: ${BLOG_ON_RAILS_REDIS_PORT}
+    environment:
+      BLOG_ON_RAILS_PROD_DATABASE: ${BLOG_ON_RAILS_PROD_DATABASE}
+      BLOG_ON_RAILS_PROD_DATABASE_USERNAME: ${BLOG_ON_RAILS_PROD_DATABASE_USERNAME}
+      BLOG_ON_RAILS_PROD_DATABASE_PASSWORD: ${BLOG_ON_RAILS_PROD_DATABASE_PASSWORD}
+      BLOG_ON_RAILS_PROD_DATABASE_HOST: ${BLOG_ON_RAILS_PROD_DATABASE_HOST}
+      BLOG_ON_RAILS_PROD_DATABASE_PORT: ${BLOG_ON_RAILS_PROD_DATABASE_PORT}
+      BLOG_ON_RAILS_JWT_SECRET_KEY: ${BLOG_ON_RAILS_JWT_SECRET_KEY}
+      BLOG_ON_RAILS_REDIS_HOST: ${BLOG_ON_RAILS_REDIS_HOST}
+      BLOG_ON_RAILS_REDIS_PORT: ${BLOG_ON_RAILS_REDIS_PORT}
+      BLOG_ON_RAILS_REDIS_PASSWORD: ${BLOG_ON_RAILS_REDIS_PASSWORD}
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+    depends_on:
+      - postgres
+      - redis
+    command: ["bash", "-c", "bundle exec sidekiq"]
+    restart: always
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres_container
+    environment:
+      POSTGRES_USER: ${BLOG_ON_RAILS_PROD_DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${BLOG_ON_RAILS_PROD_DATABASE_PASSWORD}
+      POSTGRES_DB: ${BLOG_ON_RAILS_PROD_DATABASE}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  redis:
+    image: redis:7
+    container_name: redis_container
+    command: ["redis-server", "--requirepass", "${BLOG_ON_RAILS_REDIS_PASSWORD}"]
+    environment:
+      REDIS_PASSWORD: ${BLOG_ON_RAILS_REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    restart: always
+
+volumes:
+  postgres_data:
